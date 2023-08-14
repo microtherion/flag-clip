@@ -12,6 +12,9 @@ function intersect_circle(p0, v, r) =
     let (num = sqrt((r^2-p0[0]^2)*v[1]^2+2*p0[0]*p0[1]*v[0]*v[1]+(r^2-p0[1]^2)*v[0]^2)-p0[1]*v[1]-p0[0]*v[0],
          l = num/(v[1]^2+v[0]^2)) p0+l*v;
 
+function intersect_lines(p0, v, q0, w) =
+    let (l = (-q0[0]*w[1]+p0[0]*w[1]+(q0[1]-p0[1])*w[0])/(v[1]*w[0]-v[0]*w[1])) p0+l*v;
+
 module flagclip(wire_dia=wire_dia, thickness=thickness, wall=wall,
                 spring_center= 3.0,     /*                              */
                 spring_gap   = 3.0,     /*                              */
@@ -33,17 +36,19 @@ module flagclip(wire_dia=wire_dia, thickness=thickness, wall=wall,
 
     cara_ratio_r       = [sin(0.5*cara_aperture), cos(0.5*cara_aperture)];
     cara_ratio_out_r   = [cos(0.5*cara_aperture), -sin(0.5*cara_aperture)];
-    cara_inner_bot_r   = spring_outer_in_r*cara_ratio_r;
-    cara_outer_bot_r   = (spring_outer_in_r+0.5*wall)*cara_ratio_r+wall*cara_ratio_out_r;
-    cara_inner_top_r   = (spring_outer_in_r+cara_arm)*cara_ratio_r;
+    cara_inner_bot_r   = [0.5*spring_gap, spring_outer_in_r*cos(asin(0.5*spring_gap/spring_outer_in_r))];
+    cara_inner_top_r   = cara_inner_bot_r+cara_arm*cara_ratio_r;
     cara_outer_top_r   = cara_inner_top_r+wall*cara_ratio_out_r;
+    cara_outer_top_rp  = cara_inner_top_r+(wall+1)*cara_ratio_out_r;
+    cara_outer_bot_r   = cara_outer_top_r-(cara_arm-0.5*wall)*cara_ratio_r;
     cara_ratio_l       = [-sin(0.5*cara_aperture), cos(0.5*cara_aperture)];
     cara_ratio_out_l   = [-cos(0.5*cara_aperture), -sin(0.5*cara_aperture)];
-    cara_inner_bot_l   = spring_outer_in_r*cara_ratio_l;
-    cara_outer_bot_l   = (spring_outer_in_r+0.5*wall)*cara_ratio_l+wall*cara_ratio_out_l;
-    cara_inner_top_l   = (spring_outer_in_r+cara_arm)*cara_ratio_l;
+    cara_inner_bot_l   = [-cara_inner_bot_r[0], cara_inner_bot_r[1]];
+    cara_inner_top_l   = cara_inner_bot_l+cara_arm*cara_ratio_l;
     cara_outer_top_l   = cara_inner_top_l+wall*cara_ratio_out_l;
-    cara_inner_gap_l   = (spring_outer_in_r+cara_arm-gap)*cara_ratio_l;
+    cara_outer_top_lp  = cara_inner_top_l+(wall+1)*cara_ratio_out_l;
+    cara_outer_bot_l   = cara_outer_top_l-(cara_arm-0.5*wall)*cara_ratio_l;
+    cara_inner_gap_l   = cara_inner_bot_l+(cara_arm-gap)*cara_ratio_l;
     cara_outer_gap_l   = cara_inner_gap_l+wall*cara_ratio_out_l;
     cara_loop_center   = [0,cara_inner_top_r[1]];
     cara_loop_in_r     = cara_inner_top_r[0];
@@ -72,6 +77,12 @@ module flagclip(wire_dia=wire_dia, thickness=thickness, wall=wall,
     clip_inner_gap_t   = clip_outer_gap_t-wall*clip_ratio_out_l-clip_lever*clip_ratio_l;
     clip_inner_gap_b   = clip_inner_gap_t+gap*clip_ratio_l;
     wire_center        = [0, clip_bot_in_r[1]+0.5*wire_dia];
+    clip_angle         = 180-0.5*clip_arc;
+    wire_ratio         = [sin(clip_angle), cos(clip_angle)];
+    wire_out_r         = clip_wall*[wire_ratio[1], -wire_ratio[0]];
+    clip_wire_inter_r  = intersect_lines(clip_bot_in_r, clip_ratio_r, wire_center, wire_ratio);
+    clip_wire_inter_l  = [-clip_wire_inter_r[0], clip_wire_inter_r[1]];
+    wire_out_l         = clip_wall*[-wire_ratio[1], -wire_ratio[0]];
 
     linear_extrude(height=thickness) {
         /* Spring */
@@ -96,7 +107,7 @@ module flagclip(wire_dia=wire_dia, thickness=thickness, wall=wall,
         difference() {
             translate(cara_loop_center) circle(r = cara_loop_out_r);
             translate(cara_loop_center) circle(r = cara_loop_in_r);
-            polygon(points=[cara_outer_top_r, cara_inner_top_r, cara_loop_center, cara_inner_top_l, cara_outer_top_l, [cara_outer_top_l[0], 0], [cara_outer_top_r[0], 0]]);
+            polygon(points=[cara_outer_top_rp, cara_inner_top_r, cara_loop_center, cara_inner_top_l, cara_outer_top_lp, [cara_outer_top_l[0], 0], [cara_outer_top_r[0], 0]]);
         }
         polygon(points=[cara_outer_bot_r, cara_outer_top_r, cara_inner_top_r, cara_inner_bot_r]);
         polygon(points=[cara_outer_bot_l, cara_outer_gap_l, cara_inner_gap_l, cara_inner_bot_l]);
@@ -116,8 +127,14 @@ module flagclip(wire_dia=wire_dia, thickness=thickness, wall=wall,
         }
         translate([clip_bot_in_l[0], clip_bot_in_l[1]-wall]) square(size=[clip_base, wall]);
         difference() {
-            translate(wire_center) circle(r=0.5*wire_dia+clip_wall);
+            union() {
+                translate(wire_center) circle(r=0.5*wire_dia+clip_wall);
+                polygon(points=[wire_center, wire_center+wire_out_r, clip_wire_inter_r+wire_out_r, clip_wire_inter_r]);
+                polygon(points=[wire_center, clip_wire_inter_l, clip_wire_inter_l+wire_out_l, wire_center+wire_out_l]);
+            }
             translate(wire_center) circle(r=0.5*wire_dia);
+            polygon(points=[wire_center, clip_wire_inter_r, clip_wire_inter_l]);
+            translate(clip_wire_inter_l) square([clip_base, wall]);
         }
     }
 }
