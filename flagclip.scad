@@ -4,9 +4,44 @@
  * Copyright (C) 2022-23 Matthias Neeracher <microtherion@gmail.com>
  */
 
-wire_dia  = 3.9;         /* Diameter of flagpole wire                   */
-thickness = 4.0;         /* Thickness (Z)                               */
-wall      = 4.0;         /* Width of outer wall                         */
+// Diameter of flagpole wire
+wire_dia        = 3.9;          // [1.0:0.05:7.0]
+
+/* [Other Parameters - Tune if Needed] */
+// Thickness (Z)
+thickness       = 4.0;          // [3.0:0.25:8.0]
+// Width of outer walls
+wall            = 4.0;          // [2.0:0.25:6.0]
+// Gaps for carabine and spring openings
+gap             = 1.0;          // [0.5:0.25:2.0]
+
+/* [Spring Parameters - Tune if Needed] */
+// Spring Center Radius
+spring_center   = 3.0;          // [2.0:0.5:10.0]
+// Gap Between Inner and Outer Rings
+spring_gap      = 3.0;          // [1.0:0.5:5.0]
+
+/* [Carabine Parameters - Tune if Needed] */
+// Aperture Angle of Carabine Loop
+cara_aperture   = 45.0;         // [30:5:90]
+// Length of Carabine Arm
+cara_arm        = 15.0;         // [10:5:50]
+
+/* [Clip Parameters - Tune if Needed] */
+// Width of Inner Gap for Clip
+clip_aper       = 2.5;          // [1.0:.5:10]
+// Width of Clip at Bottom of Opening
+clip_base       = 12.0;         // [10.0:50.0]
+// Length of Clip Arm
+clip_arm        = 18.0;         // [15.0:50.0]
+// Arc of Wire Holder
+clip_arc        = 290;          // [190.0:10:330]
+// Width of Wire Holder Walls
+clip_wall       = 2.0;          // [1.0:0.25:4.0]
+// Clearance of Gap from Edge of Spring
+clip_clear      = 4.0;          // [1.0:1.0:10.0]
+// Vertical Displacement of Clip Gap
+clip_lever      = 4.0;          // [0.0:0.25:6.0]
 
 function intersect_circle(p0, v, r) =
     let (num = sqrt((r^2-p0[0]^2)*v[1]^2+2*p0[0]*p0[1]*v[0]*v[1]+(r^2-p0[1]^2)*v[0]^2)-p0[1]*v[1]-p0[0]*v[0],
@@ -16,18 +51,12 @@ function intersect_lines(p0, v, q0, w) =
     let (l = (-q0[0]*w[1]+p0[0]*w[1]+(q0[1]-p0[1])*w[0])/(v[1]*w[0]-v[0]*w[1])) p0+l*v;
 
 module flagclip(wire_dia=wire_dia, thickness=thickness, wall=wall,
-                spring_center= 3.0,     /*                              */
-                spring_gap   = 3.0,     /*                              */
-                cara_aperture= 45.0,    /*                              */
-                cara_arm     = 15.0,    /*                              */
-                gap          = 1.0,     /*                              */
-                clip_aper    = 2.5,     /*                              */
-                clip_base    = 12.0,    /*                              */
-                clip_arm     = 18.0,    /*                              */
-                clip_arc     = 290.0,   /*                              */
-                clip_wall    = 2.0,     /*                              */
-                clip_clear   = 4.0,     /*                              */
-                clip_lever   = 4.0)     /*                              */
+                spring_center=spring_center, spring_gap=spring_gap,
+                cara_aperture=cara_aperture, cara_arm=cara_arm,
+                gap=gap,
+                clip_aper=clip_aper, clip_base=clip_base, clip_arm=clip_arm,
+                clip_arc=clip_arc, clip_wall=clip_wall, clip_clear=clip_clear,
+                clip_lever=clip_lever)
 {
     spring_inner_in_r  = spring_center;
     spring_inner_out_r = spring_inner_in_r + wall;
