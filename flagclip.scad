@@ -4,6 +4,8 @@
  * Copyright (C) 2022-23 Matthias Neeracher <microtherion@gmail.com>
  */
 
+$fn= $preview ? 32 : 64;
+
 // Diameter of flagpole wire
 wire_dia        = 3.9;          // [1.0:0.05:7.0]
 
